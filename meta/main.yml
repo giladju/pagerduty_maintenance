@@ -1,0 +1,12 @@
+galaxy_info:
+  author: Gilad Judes
+  description: Role for toggling PagerDuty Maintenance mode
+  license: BSD
+
+  min_ansible_version: 2.4
+
+  galaxy_tags:
+    - pagerduty 
+    - maintenance
+
+dependencies: []

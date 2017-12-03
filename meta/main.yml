@@ -6,12 +6,16 @@ galaxy_info:
   min_ansible_version: 2.4
 
   platforms:
-  - name: Fedora  
+  - name: Ubuntu
     versions:
-    - Any
-  - name: Debian  
+    - xenial
+    - trusty
+    - precise
+  - name: Debian
     versions:
-    - Any
+    - stretch
+    - jessie
+    - wheezy
 
   galaxy_tags:
     - pagerduty 

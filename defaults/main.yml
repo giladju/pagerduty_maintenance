@@ -1,0 +1,23 @@
+---
+# defaults file for pagerduty-maintenance
+
+pagerduty_api_key: "{{ vault_pagerduty_api_key }}"
+pagerduty_email: "{{ vault_pagerduty_email }}}" 
+pagerduty_service: "{{ vault_pagerduty_service }}}" 
+pagerduty_maint_period_in_hours: 3
+pagerduty_maint_desc: "Updating {{ env_name }} on {{ pagerduty_maint_date }}"
+pagerduty_maint_on_body: |
+  {
+    "maintenance_window": {
+      "type": "maintenance_window",
+      "start_time": "{{ pagerduty_maint_start }}",
+      "end_time": "{{ pagerduty_maint_end }}",
+      "description": "{{ pagerduty_maint_desc }}",
+      "services": [
+        {
+          "id": "{{ pagerduty_service }}",
+          "type": "service_reference"
+        }
+      ]
+    }
+  }

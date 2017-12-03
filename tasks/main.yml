@@ -1,0 +1,69 @@
+---
+# tasks file for pagerduty maintenance 
+
+- name: Assert in_maintenance state var 
+  assert:
+    that:
+      - in_maintenance is defined
+    msg: "Do you want switch ON Maintenance mode (i.e. stop alerts) or OFF (i.e. resume alerts) in Pagerduty?"
+- name: Fail playbook when in_maintenance not ON or OFF
+  fail:
+    msg: "in_maintenance can be either ON or OFF in Pagerduty"
+  when: in_maintenance != "ON" and in_maintenance != "OFF"
+
+- name: set_fact maintenance date
+  set_fact: 
+    pagerduty_maint_date: "{{lookup('pipe','date +%Y-%m-%d')}}"
+
+- name: set_fact maintenance start
+  set_fact: 
+    pagerduty_maint_start: "{{lookup('pipe','date +%Y-%m-%dT%H:%M:%S%z')}}"
+
+- name: set_fact end_date_command
+  set_fact:
+    end_date_command: "date -d '+ {{ pagerduty_maint_period_in_hours }} hour' +%Y-%m-%dT%H:%M:%S%z"
+- name: set_fact maintenance end
+  set_fact: 
+    pagerduty_maint_end: "{{lookup('pipe',end_date_command)}}"
+
+- name: pagerduty_maintenance - switch ON for {{ pagerduty_maint_period_in_hours }} hours
+  uri:
+    url: https://api.pagerduty.com/maintenance_windows
+    method: POST
+    body: "{{ pagerduty_maint_on_body }}"
+    body_format: json 
+    status_code: 201
+    headers: 
+      Content-Type: "application/json"
+      Accept: "application/vnd.pagerduty+json;version=2"
+      From: "{{ pagerduty_email }}"
+      Authorization: "Token token={{ pagerduty_api_key }}"
+  when: in_maintenance == "ON"
+
+- name: Get list of on-going maintenance windows
+  uri:
+    url: https://api.pagerduty.com/maintenance_windows?filter=ongoing
+    method: GET
+    status_code: 200
+    headers: 
+      Accept: "application/vnd.pagerduty+json;version=2"
+      Authorization: "Token token={{ pagerduty_api_key }}"
+  when: in_maintenance == "OFF"
+  register: ongoing_maintenance_windows
+
+- debug:
+    msg: "There are no ongoing maintenance windows"
+  when: 
+    - in_maintenance == "OFF"
+    - ongoing_maintenance_windows.json.maintenance_windows|length == 0
+
+- name: pagerduty_maintenance - switch OFF
+  uri:
+    url: "https://api.pagerduty.com/maintenance_windows/{{ item.id }}"
+    method: DELETE
+    status_code: 204
+    headers: 
+      Accept: "application/vnd.pagerduty+json;version=2"
+      Authorization: "Token token={{ pagerduty_api_key }}"
+  with_items: "{{ ongoing_maintenance_windows.json.maintenance_windows }}"
+  when: in_maintenance == "OFF"
